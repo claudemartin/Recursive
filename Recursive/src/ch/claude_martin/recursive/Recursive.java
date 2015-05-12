@@ -84,7 +84,7 @@ public class Recursive<F> {
    * Function is garbage collected.
    * 
    * @param f
-   *          The funcation
+   *          The function
    * @return recursive, cached Function
    */
   public static <T, R> Function<T, R> cachedFunction(BiFunction<T, Function<T, R>, R> f) {
@@ -109,7 +109,7 @@ public class Recursive<F> {
    * Like {@link #intFunction(RecursiveIntFunction)}, but using memoization.
    * 
    * @param f
-   *          The funcation
+   *          The function
    * @param min
    *          the smallest possible input value
    * @param max
