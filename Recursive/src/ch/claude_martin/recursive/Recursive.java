@@ -3,6 +3,7 @@ package ch.claude_martin.recursive;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.Callable;
 import java.util.function.*;
 
 import ch.claude_martin.recursive.function.*;
@@ -310,6 +311,30 @@ public class Recursive<F> {
   public static <T> UnaryOperator<T> unaryOperator(RecursiveUnaryOperator<T> f) {
     final Recursive<UnaryOperator<T>> r = new Recursive<>();
     return r.f = t -> f.apply(t, r.f);
+  }
+
+  /** Recursive {@link Consumer}. */
+  public static <T> Consumer<T> consumer(BiConsumer<T, Consumer<T>> f) {
+    final Recursive<Consumer<T>> r = new Recursive<>();
+    return r.f = t -> f.accept(t, r.f);
+  }
+
+  /** Recursive {@link Callable}. */
+  public static <T> Callable<T> callable(Function<Callable<T>, T> f) {
+    final Recursive<Callable<T>> r = new Recursive<>();
+    return r.f = () -> f.apply(r.f);
+  }
+
+  /** Recursive {@link Supplier}. */
+  public static <T> Supplier<T> supplier(Function<Supplier<T>, T> f) {
+    final Recursive<Supplier<T>> r = new Recursive<>();
+    return r.f = () -> f.apply(r.f);
+  }
+
+  /** Recursive {@link Runnable}. */
+  public static <T> Runnable runnable(Consumer<Runnable> f) {
+    final Recursive<Runnable> r = new Recursive<>();
+    return r.f = () -> f.accept(r.f);
   }
 
   /** Holds a reference to the recursive function, predicate or operand. */
