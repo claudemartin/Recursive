@@ -318,6 +318,30 @@ public class Recursive<F> {
     final Recursive<Consumer<T>> r = new Recursive<>();
     return r.f = t -> f.accept(t, r.f);
   }
+  
+  /** Recursive {@link IntConsumer}. */
+  public static IntConsumer intConsumer(RecursiveIntConsumer f) {
+    final Recursive<IntConsumer> r = new Recursive<>();
+    return r.f = t -> f.accept(t, r.f);
+  }
+  
+  /** Recursive {@link LongConsumer}. */
+  public static LongConsumer longConsumer(RecursiveLongConsumer f) {
+    final Recursive<LongConsumer> r = new Recursive<>();
+    return r.f = t -> f.accept(t, r.f);
+  }
+  
+  /** Recursive {@link DoubleConsumer}. */
+  public static DoubleConsumer longConsumer(RecursiveDoubleConsumer f) {
+    final Recursive<DoubleConsumer> r = new Recursive<>();
+    return r.f = t -> f.accept(t, r.f);
+  }
+
+  /** Recursive {@link BiConsumer}. */
+  public static <T, U> BiConsumer<T, U> biConsumer(RecursiveBiConsumer<T, U> f) {
+    final Recursive<BiConsumer<T, U>> r = new Recursive<>();
+    return r.f = (t, u) -> f.accept(t, u, r.f);
+  }
 
   /** Recursive {@link Callable}. */
   public static <T> Callable<T> callable(Function<Callable<T>, T> f) {
@@ -330,13 +354,31 @@ public class Recursive<F> {
     final Recursive<Supplier<T>> r = new Recursive<>();
     return r.f = () -> f.apply(r.f);
   }
+  
+  /** Recursive {@link IntSupplier}. */
+  public static IntSupplier intSupplier(ToIntFunction<IntSupplier> f) {
+    final Recursive<IntSupplier> r = new Recursive<>();
+    return r.f = () -> f.applyAsInt(r.f);
+  }
+  
+  /** Recursive {@link LongSupplier}. */
+  public static LongSupplier longSupplier(ToLongFunction<LongSupplier> f) {
+    final Recursive<LongSupplier> r = new Recursive<>();
+    return r.f = () -> f.applyAsLong(r.f);
+  }
+  
+  /** Recursive {@link DoubleSupplier}. */
+  public static DoubleSupplier longSupplier(ToDoubleFunction<DoubleSupplier> f) {
+    final Recursive<DoubleSupplier> r = new Recursive<>();
+    return r.f = () -> f.applyAsDouble(r.f);
+  }
 
   /** Recursive {@link Runnable}. */
-  public static <T> Runnable runnable(Consumer<Runnable> f) {
+  public static Runnable runnable(Consumer<Runnable> f) {
     final Recursive<Runnable> r = new Recursive<>();
     return r.f = () -> f.accept(r.f);
   }
 
-  /** Holds a reference to the recursive function, predicate or operand. */
+  /** Holds a reference to the recursive function, predicate, operand, consumer, suppliert, callable or runnable. */
   private F f;
 }
