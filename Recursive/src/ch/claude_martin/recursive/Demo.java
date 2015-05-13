@@ -1,10 +1,15 @@
 package ch.claude_martin.recursive;
 
 import java.io.File;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
+import java.util.Random;
 import java.util.function.BiFunction;
+import java.util.function.IntBinaryOperator;
+import java.util.function.IntSupplier;
 import java.util.function.IntToLongFunction;
-import java.util.function.LongBinaryOperator;
+import java.util.function.ToIntFunction;
 import java.util.stream.IntStream;
 
 public class Demo {
@@ -26,19 +31,31 @@ public class Demo {
         .forEach(System.out::println);
 
     System.out.println("--- Greatest Common Divisor: ---");
-    // So far there's no cached version for this:
-    final LongBinaryOperator gcd = Recursive.longBinaryOperator(//
-        (x, y, self) -> y == 0 ? x : self.applyAsLong(y, x % y));
+    // The cache will convert two ints to one Long:
+    final IntBinaryOperator gcd = Recursive.cachedIntBinaryOperator(//
+        (x, y, self) -> y == 0 ? x : self.applyAsInt(y, x % y));
 
     for (int x = 200; x < 300; x++)
       for (int y = 200; y < 300; y++) {
         if (x == y)
           continue;
-        long gcdXY = gcd.applyAsLong(x, y);
+        long gcdXY = gcd.applyAsInt(x, y);
         if (gcdXY >= 70)
           System.out.println(String.format("gcd(%d,%d) = %d", x, y, gcdXY));
       }
 
+    System.out.println("--- Sum: ---");
+    // Returns the sum of elements in given list of Integers: 
+    ToIntFunction<List<Integer>> sum = Recursive.toIntFunction((list, self) -> {
+      if (list.isEmpty())
+        return 0;
+      return list.get(0) + self.applyAsInt(list.subList(1, list.size()));
+    });
+    
+    List<Integer> list = Arrays.asList(3, 5, 42, -17, 321, 1010, -1, 0);
+    // same as: list.stream().mapToInt(i->i).sum();
+    System.out.println(String.format("sum(%s) = %d", list, sum.applyAsInt(list)));
+    
     System.out.println("--- Traverse File System: ---");
     // Try to find the source code of this Demo:
     final BiFunction<File, String, Optional<File>> find = Recursive.biFunction(//
@@ -60,6 +77,19 @@ public class Demo {
     System.out.println(find.apply(new File(path).getParentFile(), "Demo.java").map(File::toString).map("Source Code found: "::concat)
         .orElse("File not found"));
 
+    System.out.println("--- Stay Positive: ---");
+    // Will get any integer:
+    final IntSupplier rng = new Random()::nextInt;
+    // Will try again if negative:
+    final IntSupplier positiveRng = Recursive.intSupplier((self) -> {
+      final int next = rng.getAsInt();
+      if(next >= 0) return next;
+      return self.getAsInt();
+    });
+    
+    System.out.println("Random Unsigned Number: "+positiveRng.getAsInt());
+    
+    
     System.out.println("--- Count Down: ---");
     
     // This works like a simple animation loop:

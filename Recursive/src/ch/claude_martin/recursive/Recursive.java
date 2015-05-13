@@ -3,20 +3,22 @@ package ch.claude_martin.recursive;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.concurrent.Callable;
 import java.util.function.*;
 
 import ch.claude_martin.recursive.function.*;
 
-/**
- * Utility class for recusrive closures. This can convert any functional type to one that allows
+/** Utility class for recusrive closures. This can convert any functional type to one that allows
  * recursive invokations. An extra paremater "self" can be used to call itself.
+ * 
+ * Only for some recursive functions there is a <i>cached</i> version, which uses <i>memoization</i>
+ * to speed up execution. Existing results are not calculated again.
  * 
  * @author Claude Martin
  *
  * @param <F>
- *          The type of functional interface of the closure.
- */
+ *          The type of functional interface of the closure. */
 public class Recursive<F> {
   /** Recursive {@link BiFunction}. */
   public static <T, U, R> BiFunction<T, U, R> biFunction(RecursiveBiFunction<T, U, R> f) {
@@ -78,16 +80,14 @@ public class Recursive<F> {
     return r.f = t -> f.apply(t, r.f);
   }
 
-  /**
-   * Like {@link #function(BiFunction)}, but using memoization.
+  /** Like {@link #function(BiFunction)}, but using memoization.
    * <p>
    * Note that the cache holds strong references to all returned values. They all live until the
    * Function is garbage collected.
    * 
    * @param f
    *          The function
-   * @return recursive, cached Function
-   */
+   * @return recursive, cached Function */
   public static <T, R> Function<T, R> cachedFunction(BiFunction<T, Function<T, R>, R> f) {
     final Recursive<Function<T, R>> r = new Recursive<>();
     final Map<T, R> cache = new HashMap<>();
@@ -100,14 +100,29 @@ public class Recursive<F> {
     return r.f = (left, right) -> f.apply(left, right, r.f);
   }
 
+  /** Like {@link #intBinaryOperator(RecursiveIntBinaryOperator)}, but using memoization.
+   * <p>
+   * This will convert two primitive integers to one Long object so the result can be cached in a
+   * {@link Map}. That cache exists as long as the closure exists.
+   * 
+   * @param f
+   *          The function
+   * @return recursive, cached IntBinaryOperator */
+  public static IntBinaryOperator cachedIntBinaryOperator(RecursiveIntBinaryOperator f) {
+    final Recursive<IntBinaryOperator> r = new Recursive<>();
+    final Map<Long, Integer> cache = new TreeMap<>();
+    final BiFunction<Integer, Integer, Long> i2l = (a, b) -> (((long) a) << 32) + ((long) b);
+    return r.f = (left, right) -> cache.computeIfAbsent(i2l.apply(left, right),
+        x -> f.apply(left, right, r.f));
+  }
+
   /** Recursive {@link IntFunction}. */
   public static <R> IntFunction<R> intFunction(RecursiveIntFunction<R> f) {
     final Recursive<IntFunction<R>> r = new Recursive<>();
     return r.f = i -> f.apply(i, r.f);
   }
 
-  /**
-   * Like {@link #intFunction(RecursiveIntFunction)}, but using memoization.
+  /** Like {@link #intFunction(RecursiveIntFunction)}, but using memoization.
    * 
    * @param f
    *          The function
@@ -115,8 +130,7 @@ public class Recursive<F> {
    *          the smallest possible input value
    * @param max
    *          the greatest possible input value
-   * @return recursive, cached IntUnaryOperator
-   * */
+   * @return recursive, cached IntUnaryOperator */
   @SuppressWarnings("unchecked")
   public static <R> IntFunction<R> cachedIntFunction(RecursiveIntFunction<R> f, int min, int max) {
     if (min >= max)
@@ -145,14 +159,7 @@ public class Recursive<F> {
     return r.f = d -> f.apply(d, r.f);
   }
 
-  /** Recursive {@link IntToLongFunction}. */
-  public static IntToLongFunction intToLongFunction(RecursiveIntToLongFunction f) {
-    final Recursive<IntToLongFunction> r = new Recursive<>();
-    return r.f = d -> f.apply(d, r.f);
-  }
-
-  /**
-   * Like {@link #intToLongFunction(RecursiveIntToLongFunction)}, but using memoization.
+  /** Like {@link #intToDoubleFunction(RecursiveIntToDoubleFunction)}, but using memoization.
    * 
    * @param f
    *          The function
@@ -160,8 +167,46 @@ public class Recursive<F> {
    *          the smallest possible input value
    * @param max
    *          the greatest possible input value
-   * @return recursive, cached IntToLongFunction
-   */
+   * @return recursive, cached IntToDoubleFunction */
+  public static IntToDoubleFunction cachedIntToDoubleFunction(RecursiveIntToDoubleFunction f,
+      int min, int max) {
+    if (min >= max)
+      throw new IllegalArgumentException(String.format("min=%d; max=%d", min, max));
+    final Recursive<IntToDoubleFunction> r = new Recursive<>();
+
+    final int size = Math.abs(max + 1 - min);
+    final double nil = Double.MIN_VALUE + 1234;
+    final double[] cache = new double[size];
+    Arrays.fill(cache, nil);
+
+    return r.f = i -> {
+      try {
+        final double cached = cache[i - min];
+        if (cached == nil)
+          return cache[i - min] = f.apply(i, r.f);
+        return cached;
+      } catch (final ArrayIndexOutOfBoundsException e) {
+        throw new IllegalArgumentException(i
+            + " is not in bounds of used cache for IntToDoubleFunction.", e);
+      }
+    };
+  }
+
+  /** Recursive {@link IntToLongFunction}. */
+  public static IntToLongFunction intToLongFunction(RecursiveIntToLongFunction f) {
+    final Recursive<IntToLongFunction> r = new Recursive<>();
+    return r.f = d -> f.apply(d, r.f);
+  }
+
+  /** Like {@link #intToLongFunction(RecursiveIntToLongFunction)}, but using memoization.
+   * 
+   * @param f
+   *          The function
+   * @param min
+   *          the smallest possible input value
+   * @param max
+   *          the greatest possible input value
+   * @return recursive, cached IntToLongFunction */
   public static IntToLongFunction cachedIntToLongFunction(RecursiveIntToLongFunction f, int min,
       int max) {
     if (min >= max)
@@ -192,8 +237,7 @@ public class Recursive<F> {
     return r.f = i -> f.apply(i, r.f);
   }
 
-  /**
-   * Like {@link #intUnaryOperator(RecursiveIntUnaryOperator)}, but using memoization.
+  /** Like {@link #intUnaryOperator(RecursiveIntUnaryOperator)}, but using memoization.
    * 
    * @param f
    *          The operator
@@ -201,8 +245,7 @@ public class Recursive<F> {
    *          the smallest possible input value
    * @param max
    *          the greatest possible input value
-   * @return recursive, cached IntUnaryOperator
-   */
+   * @return recursive, cached IntUnaryOperator */
   public static IntUnaryOperator cachedIntUnaryOperator(RecursiveIntUnaryOperator f, int min,
       int max) {
     if (min >= max)
@@ -318,19 +361,19 @@ public class Recursive<F> {
     final Recursive<Consumer<T>> r = new Recursive<>();
     return r.f = t -> f.accept(t, r.f);
   }
-  
+
   /** Recursive {@link IntConsumer}. */
   public static IntConsumer intConsumer(RecursiveIntConsumer f) {
     final Recursive<IntConsumer> r = new Recursive<>();
     return r.f = t -> f.accept(t, r.f);
   }
-  
+
   /** Recursive {@link LongConsumer}. */
   public static LongConsumer longConsumer(RecursiveLongConsumer f) {
     final Recursive<LongConsumer> r = new Recursive<>();
     return r.f = t -> f.accept(t, r.f);
   }
-  
+
   /** Recursive {@link DoubleConsumer}. */
   public static DoubleConsumer longConsumer(RecursiveDoubleConsumer f) {
     final Recursive<DoubleConsumer> r = new Recursive<>();
@@ -354,19 +397,19 @@ public class Recursive<F> {
     final Recursive<Supplier<T>> r = new Recursive<>();
     return r.f = () -> f.apply(r.f);
   }
-  
+
   /** Recursive {@link IntSupplier}. */
   public static IntSupplier intSupplier(ToIntFunction<IntSupplier> f) {
     final Recursive<IntSupplier> r = new Recursive<>();
     return r.f = () -> f.applyAsInt(r.f);
   }
-  
+
   /** Recursive {@link LongSupplier}. */
   public static LongSupplier longSupplier(ToLongFunction<LongSupplier> f) {
     final Recursive<LongSupplier> r = new Recursive<>();
     return r.f = () -> f.applyAsLong(r.f);
   }
-  
+
   /** Recursive {@link DoubleSupplier}. */
   public static DoubleSupplier longSupplier(ToDoubleFunction<DoubleSupplier> f) {
     final Recursive<DoubleSupplier> r = new Recursive<>();
@@ -379,6 +422,7 @@ public class Recursive<F> {
     return r.f = () -> f.accept(r.f);
   }
 
-  /** Holds a reference to the recursive function, predicate, operand, consumer, suppliert, callable or runnable. */
+  /** Holds a reference to the recursive function, predicate, operand, consumer, suppliert, callable
+   * or runnable. */
   private F f;
 }
