@@ -1,19 +1,23 @@
 package ch.claude_martin.recursive;
 
-import java.util.Arrays;
-import java.util.HashMap;
 import java.util.Map;
-import java.util.TreeMap;
 import java.util.concurrent.Callable;
 import java.util.function.*;
 
+import ch.claude_martin.recursive.cache.*;
 import ch.claude_martin.recursive.function.*;
 
 /** Utility class for recusrive closures. This can convert any functional type to one that allows
  * recursive invokations. An extra paremater "self" can be used to call itself.
  * 
- * Only for some recursive functions there is a <i>cached</i> version, which uses <i>memoization</i>
- * to speed up execution. Existing results are not calculated again.
+ * For some functions there is a <i>cached</i> version, which uses <i>memoization</i> to speed up
+ * execution. Existing results are not calculated again. You simply need to provide some memoization
+ * routine. The predefined cache implementations are based on arrays or JCF. Use HPPC or Koloboke
+ * for best results.
+ * 
+ * <p>
+ * Each cache exists at least as long as the closure exists. In some cases this might lead to
+ * {@link OutOfMemoryError}.
  * 
  * @author Claude Martin
  *
@@ -24,6 +28,34 @@ public class Recursive<F> {
   public static <T, U, R> BiFunction<T, U, R> biFunction(RecursiveBiFunction<T, U, R> f) {
     final Recursive<BiFunction<T, U, R>> r = new Recursive<>();
     return r.f = (t, u) -> f.apply(t, u, r.f);
+  }
+
+  /** Like {@link #biFunction(RecursiveBiFunction)}, but using memoization.
+   * <p>
+   * Note that the cache holds strong references to all returned values. They all live until the
+   * Function is garbage collected.
+   * 
+   * @param f
+   *          The function
+   * @return recursive, cached BiFunction */
+  public static <T, U, R> BiFunction<T, U, R> cachedBiFunction(RecursiveBiFunction<T, U, R> f) {
+    return cachedBiFunction(f, BiFunctionCache.create());
+  }
+
+  /** Like {@link #biFunction(RecursiveBiFunction)}, but using memoization.
+   * <p>
+   * Note that the cache holds strong references to all returned values. They all live until the
+   * Function is garbage collected.
+   * 
+   * @param f
+   *          The function
+   * @param cache
+   *          The cache for memoization.
+   * @return recursive, cached BiFunction */
+  public static <T, U, R> BiFunction<T, U, R> cachedBiFunction(RecursiveBiFunction<T, U, R> f,
+      BiFunctionCache<T, U, R> cache) {
+    final Recursive<BiFunction<T, U, R>> r = new Recursive<>();
+    return r.f = (t, u) -> cache.get(t, u, () -> f.apply(t, u, r.f));
   }
 
   /** Recursive {@link BinaryOperator}. */
@@ -89,9 +121,23 @@ public class Recursive<F> {
    *          The function
    * @return recursive, cached Function */
   public static <T, R> Function<T, R> cachedFunction(BiFunction<T, Function<T, R>, R> f) {
+    return cachedFunction(f, FunctionCache.create());
+  }
+
+  /** Like {@link #function(BiFunction)}, but using memoization.
+   * <p>
+   * Note that the cache holds strong references to all returned values. They all live until the
+   * Function is garbage collected.
+   * 
+   * @param f
+   *          The function
+   * @param cache
+   *          The cache for memoization.
+   * @return recursive, cached Function */
+  public static <T, R> Function<T, R> cachedFunction(BiFunction<T, Function<T, R>, R> f,
+      FunctionCache<T, R> cache) {
     final Recursive<Function<T, R>> r = new Recursive<>();
-    final Map<T, R> cache = new HashMap<>();
-    return r.f = t -> cache.computeIfAbsent(t, t2 -> f.apply(t2, r.f));
+    return r.f = t -> cache.get(t, () -> f.apply(t, r.f));
   }
 
   /** Recursive {@link IntBinaryOperator}. */
@@ -109,11 +155,20 @@ public class Recursive<F> {
    *          The function
    * @return recursive, cached IntBinaryOperator */
   public static IntBinaryOperator cachedIntBinaryOperator(RecursiveIntBinaryOperator f) {
+    return cachedIntBinaryOperator(f, IntBinaryOperatorCache.create());
+  }
+
+  /** Like {@link #intBinaryOperator(RecursiveIntBinaryOperator)}, but using memoization.
+   * 
+   * @param f
+   *          The function
+   * @param cache
+   *          The cache for memoization.
+   * @return recursive, cached IntBinaryOperator */
+  public static IntBinaryOperator cachedIntBinaryOperator(RecursiveIntBinaryOperator f,
+      IntBinaryOperatorCache cache) {
     final Recursive<IntBinaryOperator> r = new Recursive<>();
-    final Map<Long, Integer> cache = new TreeMap<>();
-    final BiFunction<Integer, Integer, Long> i2l = (a, b) -> (((long) a) << 32) + ((long) b);
-    return r.f = (left, right) -> cache.computeIfAbsent(i2l.apply(left, right),
-        x -> f.apply(left, right, r.f));
+    return r.f = (left, right) -> cache.get(left, right, () -> f.apply(left, right, r.f));
   }
 
   /** Recursive {@link IntFunction}. */
@@ -131,26 +186,22 @@ public class Recursive<F> {
    * @param max
    *          the greatest possible input value
    * @return recursive, cached IntUnaryOperator */
-  @SuppressWarnings("unchecked")
-  public static <R> IntFunction<R> cachedIntFunction(RecursiveIntFunction<R> f, int min, int max) {
-    if (min >= max)
-      throw new IllegalArgumentException(String.format("min=%d; max=%d", min, max));
+  public static <R> IntFunction<R> cachedIntFunction(RecursiveIntFunction<R> f, //
+      final int min, final int max) {
+    return cachedIntFunction(f, IntFunctionCache.<R> create(min, max));
+  }
+
+  /** Like {@link #intFunction(RecursiveIntFunction)}, but using memoization.
+   * 
+   * @param f
+   *          The function
+   * @param cache
+   *          The cache for memoization.
+   * @return recursive, cached IntUnaryOperator */
+  public static <R> IntFunction<R> cachedIntFunction(RecursiveIntFunction<R> f,
+      IntFunctionCache<R> cache) {
     final Recursive<IntFunction<R>> r = new Recursive<>();
-    final int size = Math.abs(max + 1 - min);
-    final R nil = (R) new Object();
-    final R[] cache = (R[]) new Object[size];
-    Arrays.fill(cache, nil);
-    return r.f = i -> {
-      try {
-        final R cached = cache[i - min];
-        if (cached == nil)
-          return cache[i - min] = f.apply(i, r.f);
-        return cached;
-      } catch (final ArrayIndexOutOfBoundsException e) {
-        throw new IllegalArgumentException(i + " is not in bounds of used cache for IntFunction.",
-            e);
-      }
-    };
+    return r.f = i -> cache.get(i, () -> f.apply(i, r.f));
   }
 
   /** Recursive {@link IntToDoubleFunction}. */
@@ -170,26 +221,20 @@ public class Recursive<F> {
    * @return recursive, cached IntToDoubleFunction */
   public static IntToDoubleFunction cachedIntToDoubleFunction(RecursiveIntToDoubleFunction f,
       int min, int max) {
-    if (min >= max)
-      throw new IllegalArgumentException(String.format("min=%d; max=%d", min, max));
+    return cachedIntToDoubleFunction(f, IntToDoubleFunctionCache.create(min, max));
+  }
+
+  /** Like {@link #intToDoubleFunction(RecursiveIntToDoubleFunction)}, but using memoization.
+   * 
+   * @param f
+   *          The function
+   * @param cache
+   *          The cache for memoization.
+   * @return recursive, cached IntToDoubleFunction */
+  public static IntToDoubleFunction cachedIntToDoubleFunction(RecursiveIntToDoubleFunction f,
+      IntToDoubleFunctionCache cache) {
     final Recursive<IntToDoubleFunction> r = new Recursive<>();
-
-    final int size = Math.abs(max + 1 - min);
-    final double nil = Double.MIN_VALUE + 1234;
-    final double[] cache = new double[size];
-    Arrays.fill(cache, nil);
-
-    return r.f = i -> {
-      try {
-        final double cached = cache[i - min];
-        if (cached == nil)
-          return cache[i - min] = f.apply(i, r.f);
-        return cached;
-      } catch (final ArrayIndexOutOfBoundsException e) {
-        throw new IllegalArgumentException(i
-            + " is not in bounds of used cache for IntToDoubleFunction.", e);
-      }
-    };
+    return r.f = v -> cache.get(v, () -> f.apply(v, r.f));
   }
 
   /** Recursive {@link IntToLongFunction}. */
@@ -209,26 +254,20 @@ public class Recursive<F> {
    * @return recursive, cached IntToLongFunction */
   public static IntToLongFunction cachedIntToLongFunction(RecursiveIntToLongFunction f, int min,
       int max) {
-    if (min >= max)
-      throw new IllegalArgumentException(String.format("min=%d; max=%d", min, max));
+    return cachedIntToLongFunction(f, IntToLongFunctionCache.create(min, max));
+  }
+
+  /** Like {@link #intToLongFunction(RecursiveIntToLongFunction)}, but using memoization.
+   * 
+   * @param f
+   *          The function
+   * @param cache
+   *          The cache for memoization
+   * @return recursive, cached IntToLongFunction */
+  public static IntToLongFunction cachedIntToLongFunction(RecursiveIntToLongFunction f,
+      IntToLongFunctionCache cache) {
     final Recursive<IntToLongFunction> r = new Recursive<>();
-
-    final int size = Math.abs(max + 1 - min);
-    final long nil = Long.MIN_VALUE + 1234;
-    final long[] cache = new long[size];
-    Arrays.fill(cache, nil);
-
-    return r.f = i -> {
-      try {
-        final long cached = cache[i - min];
-        if (cached == nil)
-          return cache[i - min] = f.apply(i, r.f);
-        return cached;
-      } catch (final ArrayIndexOutOfBoundsException e) {
-        throw new IllegalArgumentException(i
-            + " is not in bounds of used cache for IntToLongFunction.", e);
-      }
-    };
+    return r.f = v -> cache.get(v, () -> f.apply(v, r.f));
   }
 
   /** Recursive {@link IntUnaryOperator}. */
@@ -248,27 +287,20 @@ public class Recursive<F> {
    * @return recursive, cached IntUnaryOperator */
   public static IntUnaryOperator cachedIntUnaryOperator(RecursiveIntUnaryOperator f, int min,
       int max) {
-    if (min >= max)
-      throw new IllegalArgumentException(String.format("min=%d; max=%d", min, max));
+    return cachedIntUnaryOperator(f, IntUnaryOperatorCache.create(min, max));
+  }
+
+  /** Like {@link #intUnaryOperator(RecursiveIntUnaryOperator)}, but using memoization.
+   * 
+   * @param f
+   *          The operator
+   * @param cache
+   *          The cache for memoization
+   * @return recursive, cached IntUnaryOperator */
+  public static IntUnaryOperator cachedIntUnaryOperator(RecursiveIntUnaryOperator f,
+      IntUnaryOperatorCache cache) {
     final Recursive<IntUnaryOperator> r = new Recursive<>();
-
-    final int size = Math.abs(max + 1 - min);
-    final int nil = min - 1;
-    final int[] cache = new int[size];
-    Arrays.fill(cache, nil);
-
-    return r.f = i -> {
-      try {
-        final int cached = cache[i - min];
-        if (cached == nil)
-          return cache[i - min] = f.apply(i, r.f);
-        return cached;
-      } catch (final ArrayIndexOutOfBoundsException e) {
-        throw new IllegalArgumentException(i
-            + " is not in bounds of used cache for IntUnaryOperator.", e);
-      }
-    };
-
+    return r.f = v -> cache.get(v, () -> f.apply(v, r.f));
   }
 
   /** Recursive {@link LongBinaryOperator}. */
