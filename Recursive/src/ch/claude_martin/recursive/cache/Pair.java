@@ -1,12 +1,14 @@
 package ch.claude_martin.recursive.cache;
 
+import java.util.Comparator;
 import java.util.Objects;
 
-final class Pair<T1, T2> {
-  public final T1 first;
-  public final T2 second;
+// comparable because some maps (TreeMap) need comparable key elements.
+final class Pair<F, S> implements Comparable<Pair<F, S>> {
+  public final F first;
+  public final S second;
 
-  public Pair(T1 first, T2 second) {
+  public Pair(F first, S second) {
     this.first = first;
     this.second = second;
   }
@@ -33,12 +35,34 @@ final class Pair<T1, T2> {
     return "(" + this.first + ", " + this.second + ")";
   }
 
-  public T1 _1() {
+  public F _1() {
     return this.first;
   }
 
-  public T2 _2() {
+  public S _2() {
     return this.second;
+  }
+
+  @SuppressWarnings("unchecked")
+  @Override
+  public int compareTo(Pair<F, S> o) {
+    if (this.first instanceof Comparable) {
+      final int k = ((Comparable<F>) this.first).compareTo(o.first);
+      if (k > 0)
+        return 1;
+      if (k < 0)
+        return -1;
+    }
+
+    if (this.second instanceof Comparable) {
+      final int k = ((Comparable<S>) this.second).compareTo(o.second);
+      if (k > 0)
+        return 1;
+      if (k < 0)
+        return -1;
+    }
+
+    return 0;
   }
 
 }
