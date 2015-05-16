@@ -64,10 +64,66 @@ public class Recursive<F> {
     return r.f = (t, u) -> f.apply(t, u, r.f);
   }
 
+  /** Like {@link #binaryOperator(RecursiveBinaryOperator)}, but using memoization.
+   * <p>
+   * Note that the cache holds strong references to all returned values. They all live until the
+   * Function is garbage collected.
+   * 
+   * @param f
+   *          The function
+   * @return recursive, cached BinaryOperator */
+  public static <T> BinaryOperator<T> cachedBinaryOperator(RecursiveBinaryOperator<T> f) {
+    return cachedBinaryOperator(f, BiFunctionCache.create());
+  }
+
+  /** Like {@link #binaryOperator(RecursiveBinaryOperator)}, but using memoization.
+   * <p>
+   * Note that the cache holds strong references to all returned values. They all live until the
+   * Function is garbage collected.
+   * 
+   * @param f
+   *          The function
+   * @param cache
+   *          The cache for memoization.
+   * @return recursive, cached BinaryOperator */
+  public static <T> BinaryOperator<T> cachedBinaryOperator(RecursiveBinaryOperator<T> f,
+      BiFunctionCache<T, T, T> cache) {
+    final Recursive<BinaryOperator<T>> r = new Recursive<>();
+    return r.f = (t, u) -> cache.get(t, u, () -> f.apply(t, u, r.f));
+  }
+
   /** Recursive {@link BiPredicate}. */
   public static <T, U> BiPredicate<T, U> biPredicate(RecursiveBiPredicate<T, U> f) {
     final Recursive<BiPredicate<T, U>> r = new Recursive<>();
     return r.f = (t, u) -> f.test(t, u, r.f);
+  }
+
+  /** Like {@link #biPredicate(RecursiveBiPredicate)}, but using memoization.
+   * <p>
+   * Note that the cache holds strong references to all returned values. They all live until the
+   * Function is garbage collected.
+   * 
+   * @param f
+   *          The function
+   * @return recursive, cached BiPredicate */
+  public static <T, U> BiPredicate<T, U> cachedBiPredicate(RecursiveBiPredicate<T, U> f) {
+    return cachedBiPredicate(f, BiFunctionCache.create());
+  }
+
+  /** Like {@link #biPredicate(RecursiveBiPredicate)}, but using memoization.
+   * <p>
+   * Note that the cache holds strong references to all returned values. They all live until the
+   * Function is garbage collected.
+   * 
+   * @param f
+   *          The function
+   * @param cache
+   *          The cache for memoization.
+   * @return recursive, cached BiPredicate */
+  public static <T, U> BiPredicate<T, U> cachedBiPredicate(RecursiveBiPredicate<T, U> f,
+      BiFunctionCache<T, U, Boolean> cache) {
+    final Recursive<BiPredicate<T, U>> r = new Recursive<>();
+    return r.f = (t, u) -> cache.get(t, u, () -> f.test(t, u, r.f));
   }
 
   /** Recursive {@link DoubleBinaryOperator}. */
@@ -202,6 +258,34 @@ public class Recursive<F> {
       IntFunctionCache<R> cache) {
     final Recursive<IntFunction<R>> r = new Recursive<>();
     return r.f = i -> cache.get(i, () -> f.apply(i, r.f));
+  }
+
+  /** Recursive {@link IntPredicate}. */
+  public static IntPredicate intPredicate(RecursiveIntPredicate f) {
+    final Recursive<IntPredicate> r = new Recursive<>();
+    return r.f = i -> f.test(i, r.f);
+  }
+
+  /** Like {@link #intPredicate(RecursiveIntPredicate)}, but using memoization.
+   * 
+   * @param f
+   *          The function
+   * @return recursive, cached IntUnaryOperator */
+  public static IntPredicate cachedIntPredicate(RecursiveIntPredicate f, final int min,
+      final int max) {
+    return cachedIntPredicate(f, IntPredicateCache.create(min, max));
+  }
+
+  /** Like {@link #intPredicate(RecursiveIntPredicate)}, but using memoization.
+   * 
+   * @param f
+   *          The function
+   * @param cache
+   *          The cache for memoization.
+   * @return recursive, cached IntUnaryOperator */
+  public static IntPredicate cachedIntPredicate(RecursiveIntPredicate f, IntPredicateCache cache) {
+    final Recursive<IntPredicate> r = new Recursive<>();
+    return r.f = i -> cache.get(i, () -> f.test(i, r.f));
   }
 
   /** Recursive {@link IntToDoubleFunction}. */
@@ -345,6 +429,34 @@ public class Recursive<F> {
     return r.f = t -> f.test(t, r.f);
   }
 
+  /** Like {@link #predicate(BiPredicate)}, but using memoization.
+   * <p>
+   * Note that the cache holds strong references to all returned values. They all live until the
+   * Function is garbage collected.
+   * 
+   * @param f
+   *          The predicate
+   * @return recursive, cached Predicate */
+  public static <T> Predicate<T> cachedPredicate(BiPredicate<T, Predicate<T>> f) {
+    return cachedPredicate(f, FunctionCache.create());
+  }
+
+  /** Like {@link #predicate(BiPredicate)}, but using memoization.
+   * <p>
+   * Note that the cache holds strong references to all returned values. They all live until the
+   * Function is garbage collected.
+   * 
+   * @param f
+   *          The predicate
+   * @param cache
+   *          The cache for memoization.
+   * @return recursive, cached Predicate */
+  public static <T> Predicate<T> cachedPredicate(BiPredicate<T, Predicate<T>> f,
+      FunctionCache<T, Boolean> cache) {
+    final Recursive<Predicate<T>> r = new Recursive<>();
+    return r.f = t -> cache.get(t, () -> f.test(t, r.f));
+  }
+
   /** Recursive {@link ToDoubleBiFunction}. */
   public static <T, U> ToDoubleBiFunction<T, U> toDoubleBiFunction(
       RecursiveToDoubleBiFunction<T, U> f) {
@@ -386,6 +498,34 @@ public class Recursive<F> {
   public static <T> UnaryOperator<T> unaryOperator(RecursiveUnaryOperator<T> f) {
     final Recursive<UnaryOperator<T>> r = new Recursive<>();
     return r.f = t -> f.apply(t, r.f);
+  }
+
+  /** Like {@link #unaryOperator(RecursiveUnaryOperator)}, but using memoization.
+   * <p>
+   * Note that the cache holds strong references to all returned values. They all live until the
+   * Function is garbage collected.
+   * 
+   * @param f
+   *          The operator
+   * @return recursive, cached UnaryOperator */
+  public static <T> UnaryOperator<T> cachedUnaryOperator(RecursiveUnaryOperator<T> f) {
+    return cachedUnaryOperator(f, FunctionCache.create());
+  }
+
+  /** Like {@link #unaryOperator(RecursiveUnaryOperator)}, but using memoization.
+   * <p>
+   * Note that the cache holds strong references to all returned values. They all live until the
+   * Function is garbage collected.
+   * 
+   * @param f
+   *          The operator
+   * @param cache
+   *          The cache for memoization.
+   * @return recursive, cached UnaryOperator */
+  public static <T> UnaryOperator<T> cachedUnaryOperator(RecursiveUnaryOperator<T> f,
+      FunctionCache<T, T> cache) {
+    final Recursive<UnaryOperator<T>> r = new Recursive<>();
+    return r.f = t -> cache.get(t, () -> f.apply(t, r.f));
   }
 
   /** Recursive {@link Consumer}. */
