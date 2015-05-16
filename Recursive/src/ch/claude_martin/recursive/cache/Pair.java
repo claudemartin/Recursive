@@ -26,7 +26,7 @@ final class Pair<F, S> implements Comparable<Pair<F, S>> {
     if (!(obj instanceof Pair))
       return false;
     @SuppressWarnings("rawtypes")
-    Pair other = (Pair) obj;
+    final Pair other = (Pair) obj;
     return Objects.equals(this.first, other.first) && Objects.equals(this.second, other.second);
   }
 
