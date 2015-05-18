@@ -2,9 +2,6 @@ package ch.claude_martin.recursive.cache;
 
 import java.util.Arrays;
 import java.util.function.IntSupplier;
-import java.util.function.IntUnaryOperator;
-
-import ch.claude_martin.recursive.Recursive;
 
 @FunctionalInterface
 public interface IntUnaryOperatorCache {

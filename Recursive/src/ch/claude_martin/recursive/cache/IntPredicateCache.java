@@ -2,10 +2,6 @@ package ch.claude_martin.recursive.cache;
 
 import java.util.Arrays;
 import java.util.function.BooleanSupplier;
-import java.util.function.IntSupplier;
-import java.util.function.IntUnaryOperator;
-
-import ch.claude_martin.recursive.Recursive;
 
 @FunctionalInterface
 public interface IntPredicateCache {
@@ -24,7 +20,7 @@ public interface IntPredicateCache {
       try {
         final byte cached = bools[v - min];
         if (cached == nil) {
-          boolean result = s.getAsBoolean();
+          final boolean result = s.getAsBoolean();
           bools[v - min] = (byte) (result ? 1 : 0);
           return result;
         }

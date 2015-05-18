@@ -1,6 +1,5 @@
 package ch.claude_martin.recursive.cache;
 
-import java.util.Comparator;
 import java.util.Objects;
 
 // comparable because some maps (TreeMap) need comparable key elements.

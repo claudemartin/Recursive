@@ -1,16 +1,15 @@
 package ch.claude_martin.recursive;
 
 import java.io.File;
+import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
-import java.util.function.BiFunction;
-import java.util.function.IntBinaryOperator;
-import java.util.function.IntSupplier;
-import java.util.function.IntToLongFunction;
-import java.util.function.ToIntFunction;
+import java.util.function.*;
 import java.util.stream.IntStream;
+
+import ch.claude_martin.recursive.function.RecursiveUnaryOperator;
 
 public class Demo {
   public static void main(String[] args) throws Throwable {
@@ -19,16 +18,18 @@ public class Demo {
     final IntToLongFunction fib = Recursive.cachedIntToLongFunction(//
         (n, self) -> n <= 1 ? n : self.applyAsLong(n - 1) + self.applyAsLong(n - 2), 0, 60);
 
-    IntStream.rangeClosed(50, 60).mapToObj(n -> String.format("F%d = %d", n, fib.applyAsLong(n)))
+    IntStream.rangeClosed(55, 60).mapToObj(n -> String.format("F%d = %d", n, fib.applyAsLong(n)))
         .forEach(System.out::println);
 
     System.out.println("--- Factorial: ---");
     // "fact" is a recursive function too.
-    final IntToLongFunction fact = Recursive.cachedIntToLongFunction(//
-        (n, self) -> n == 0 ? 1 : n * self.applyAsLong(n - 1), 0, 20);
+    // But's let test this with large numbers!
+    final UnaryOperator<BigInteger> fact = Recursive.cachedUnaryOperator(//
+        (n, self) -> n.equals(BigInteger.ZERO) ? BigInteger.ONE : //
+            n.multiply(self.apply(n.subtract(BigInteger.ONE))));
 
-    IntStream.rangeClosed(10, 20).mapToObj(n -> String.format("%d! = %d", n, fact.applyAsLong(n)))
-        .forEach(System.out::println);
+    IntStream.rangeClosed(100, 105).mapToObj(BigInteger::valueOf)
+        .map(n -> String.format("%s! = %s", n, fact.apply(n))).forEach(System.out::println);
 
     System.out.println("--- Greatest Common Divisor: ---");
     // The cache will convert two ints to one Long:
@@ -45,17 +46,35 @@ public class Demo {
       }
 
     System.out.println("--- Sum: ---");
-    // Returns the sum of elements in given list of Integers: 
+    // Returns the sum of elements in given list of Integers:
     ToIntFunction<List<Integer>> sum = Recursive.toIntFunction((list, self) -> {
       if (list.isEmpty())
         return 0;
       return list.get(0) + self.applyAsInt(list.subList(1, list.size()));
     });
-    
+
     List<Integer> list = Arrays.asList(3, 5, 42, -17, 321, 1010, -1, 0);
     // same as: list.stream().mapToInt(i->i).sum();
-    System.out.println(String.format("sum(%s) = %d", list, sum.applyAsInt(list)));
-    
+    System.out.println(String.format("list = %s", list));
+    System.out.println(String.format("sum(list) = %d", sum.applyAsInt(list)));
+
+    System.out.println("--- Find Max: ---");
+
+    ToIntFunction<List<Integer>> max = Recursive.toIntFunction((l, self) -> {
+      if (l.isEmpty())
+        throw new IllegalArgumentException("Empty List");
+      final int size = l.size();
+      if (size == 1)
+        return list.get(0);
+      if (size == 2)
+        return Math.max(l.get(0), l.get(1));
+      final int middle = size / 2;
+      return Math.max(self.applyAsInt(l.subList(0, middle)),
+          self.applyAsInt(l.subList(middle, size)));
+    });
+
+    System.out.println(String.format("max(list) = %d", max.applyAsInt(list)));
+
     System.out.println("--- Traverse File System: ---");
     // Try to find the source code of this Demo:
     final BiFunction<File, String, Optional<File>> find = Recursive.biFunction(//
@@ -74,8 +93,8 @@ public class Demo {
 
     String path = Demo.class.getProtectionDomain().getCodeSource().getLocation().getPath()
         .replaceFirst("^/([A-Z]:/)", "$1").replaceAll("bin/$", "");
-    System.out.println(find.apply(new File(path).getParentFile(), "Demo.java").map(File::toString).map("Source Code found: "::concat)
-        .orElse("File not found"));
+    System.out.println(find.apply(new File(path).getParentFile(), "Demo.java").map(File::toString)
+        .map("Source Code found: "::concat).orElse("File not found"));
 
     System.out.println("--- Stay Positive: ---");
     // Will get any integer:
@@ -83,15 +102,15 @@ public class Demo {
     // Will try again if negative:
     final IntSupplier positiveRng = Recursive.intSupplier((self) -> {
       final int next = rng.getAsInt();
-      if(next >= 0) return next;
+      if (next >= 0)
+        return next;
       return self.getAsInt();
     });
-    
-    System.out.println("Random Unsigned Number: "+positiveRng.getAsInt());
-    
-    
+
+    System.out.println("Random Unsigned Number: " + positiveRng.getAsInt());
+
     System.out.println("--- Count Down: ---");
-    
+
     // This works like a simple animation loop:
     Recursive.intConsumer((i, self) -> {
       if (i == 0) {
@@ -108,7 +127,7 @@ public class Demo {
 
     System.out.println("");
     System.out.println("End of Demo. Thank you and good bye!");
-    
+
     System.out.flush();
     System.out.println();
 

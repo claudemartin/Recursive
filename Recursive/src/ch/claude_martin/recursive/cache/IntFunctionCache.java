@@ -1,7 +1,6 @@
 package ch.claude_martin.recursive.cache;
 
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.function.Supplier;
 
 @FunctionalInterface

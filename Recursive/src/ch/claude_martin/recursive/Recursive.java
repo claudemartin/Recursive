@@ -10,15 +10,16 @@ import ch.claude_martin.recursive.function.*;
 /** Utility class for recusrive closures. This can convert any functional type to one that allows
  * recursive invokations. An extra paremater "self" can be used to call itself.
  * 
- * For some functions there is a <i>cached</i> version, which uses <i>memoization</i> to speed up
- * execution. Existing results are not calculated again. You simply need to provide some memoization
- * routine. The predefined cache implementations are based on arrays or JCF. Use HPPC or Koloboke
- * for best results.
- * 
  * <p>
- * Each cache exists at least as long as the closure exists. In some cases this might lead to
+ * For each function, predicate and operator there is a <i>cached</i> version, which uses
+ * <i>memoization</i> to speed up execution. Existing results are not calculated again. You simply
+ * need to provide some memoization routine. Some have predefined cache implementations, which are
+ * based on arrays or JCF. Use HPPC or Koloboke for best results.
+ *
+ * <p>
+ * Note: Each cache exists at least as long as the closure exists. In some cases this might lead to
  * {@link OutOfMemoryError}.
- * 
+ *
  * @author Claude Martin
  *
  * @param <F>
@@ -30,11 +31,11 @@ public class Recursive<F> {
     return r.f = (t, u) -> f.apply(t, u, r.f);
   }
 
-  /** Like {@link #biFunction(RecursiveBiFunction)}, but using memoization.
+  /** Like {@link #biFunction}, but using memoization.
    * <p>
    * Note that the cache holds strong references to all returned values. They all live until the
    * Function is garbage collected.
-   * 
+   *
    * @param f
    *          The function
    * @return recursive, cached BiFunction */
@@ -42,11 +43,11 @@ public class Recursive<F> {
     return cachedBiFunction(f, BiFunctionCache.create());
   }
 
-  /** Like {@link #biFunction(RecursiveBiFunction)}, but using memoization.
+  /** Like {@link #biFunction}, but using memoization.
    * <p>
    * Note that the cache holds strong references to all returned values. They all live until the
    * Function is garbage collected.
-   * 
+   *
    * @param f
    *          The function
    * @param cache
@@ -64,11 +65,11 @@ public class Recursive<F> {
     return r.f = (t, u) -> f.apply(t, u, r.f);
   }
 
-  /** Like {@link #binaryOperator(RecursiveBinaryOperator)}, but using memoization.
+  /** Like {@link #binaryOperator}, but using memoization.
    * <p>
    * Note that the cache holds strong references to all returned values. They all live until the
    * Function is garbage collected.
-   * 
+   *
    * @param f
    *          The function
    * @return recursive, cached BinaryOperator */
@@ -76,11 +77,11 @@ public class Recursive<F> {
     return cachedBinaryOperator(f, BiFunctionCache.create());
   }
 
-  /** Like {@link #binaryOperator(RecursiveBinaryOperator)}, but using memoization.
+  /** Like {@link #binaryOperator}, but using memoization.
    * <p>
    * Note that the cache holds strong references to all returned values. They all live until the
    * Function is garbage collected.
-   * 
+   *
    * @param f
    *          The function
    * @param cache
@@ -98,11 +99,11 @@ public class Recursive<F> {
     return r.f = (t, u) -> f.test(t, u, r.f);
   }
 
-  /** Like {@link #biPredicate(RecursiveBiPredicate)}, but using memoization.
+  /** Like {@link #biPredicate}, but using memoization.
    * <p>
    * Note that the cache holds strong references to all returned values. They all live until the
    * Function is garbage collected.
-   * 
+   *
    * @param f
    *          The function
    * @return recursive, cached BiPredicate */
@@ -110,11 +111,11 @@ public class Recursive<F> {
     return cachedBiPredicate(f, BiFunctionCache.create());
   }
 
-  /** Like {@link #biPredicate(RecursiveBiPredicate)}, but using memoization.
+  /** Like {@link #biPredicate}, but using memoization.
    * <p>
    * Note that the cache holds strong references to all returned values. They all live until the
    * Function is garbage collected.
-   * 
+   *
    * @param f
    *          The function
    * @param cache
@@ -132,10 +133,39 @@ public class Recursive<F> {
     return r.f = (t, u) -> f.apply(t, u, r.f);
   }
 
+  /** Like {@link #doubleBinaryOperator}, but using memoization.
+   *
+   * @param f
+   *          The function
+   * @param cache
+   *          The cache for memoization.
+   * @return recursive, cached DoubleBinaryOperator */
+  public static DoubleBinaryOperator cachedDoubleBinaryOperator(RecursiveDoubleBinaryOperator f,
+      DoubleBinaryOperatorCache cache) {
+    final Recursive<DoubleBinaryOperator> r = new Recursive<>();
+    return r.f = (left, right) -> cache.get(left, right, () -> f.apply(left, right, r.f));
+  }
+
   /** Recursive {@link DoubleFunction}. */
   public static <R> DoubleFunction<R> doubleFunction(RecursiveDoubleFunction<R> f) {
     final Recursive<DoubleFunction<R>> r = new Recursive<>();
     return r.f = d -> f.apply(d, r.f);
+  }
+
+  /** Like {@link #doubleFunction}, but using memoization.
+   * <p>
+   * Note that the cache holds strong references to all returned values. They all live until the
+   * Function is garbage collected.
+   *
+   * @param f
+   *          The function
+   * @param cache
+   *          The cache for memoization.
+   * @return recursive, cached DoubleFunction */
+  public static <R> DoubleFunction<R> cachedDoubleFunction(RecursiveDoubleFunction<R> f,
+      DoubleFunctionCache<R> cache) {
+    final Recursive<DoubleFunction<R>> r = new Recursive<>();
+    return r.f = (d) -> cache.get(d, () -> f.apply(d, r.f));
   }
 
   /** Recursive {@link DoublePredicate}. */
@@ -144,10 +174,36 @@ public class Recursive<F> {
     return r.f = d -> f.test(d, r.f);
   }
 
+  /** Like {@link #doublePredicate}, but using memoization.
+   *
+   * @param f
+   *          The predicate
+   * @param cache
+   *          The cache for memoization.
+   * @return recursive, cached DoublePredicate */
+  public static DoublePredicate cachedDoublePredicate(RecursiveDoublePredicate f,
+      DoublePredicateCache cache) {
+    final Recursive<DoublePredicate> r = new Recursive<>();
+    return r.f = (d) -> cache.get(d, () -> f.test(d, r.f));
+  }
+
   /** Recursive {@link DoubleToIntFunction}. */
   public static DoubleToIntFunction doubleToIntFunction(RecursiveDoubleToIntFunction f) {
     final Recursive<DoubleToIntFunction> r = new Recursive<>();
     return r.f = d -> f.apply(d, r.f);
+  }
+
+  /** Like {@link #doubleToIntFunction}, but using memoization.
+   *
+   * @param f
+   *          The function
+   * @param cache
+   *          The cache for memoization.
+   * @return recursive, cached DoubleToIntFunction */
+  public static DoubleToIntFunction cachedDoubleToIntFunction(RecursiveDoubleToIntFunction f,
+      DoubleToIntFunctionCache cache) {
+    final Recursive<DoubleToIntFunction> r = new Recursive<>();
+    return r.f = (d) -> cache.get(d, () -> f.apply(d, r.f));
   }
 
   /** Recursive {@link DoubleToLongFunction}. */
@@ -156,10 +212,36 @@ public class Recursive<F> {
     return r.f = d -> f.apply(d, r.f);
   }
 
+  /** Like {@link #doubleToLongFunction}, but using memoization.
+   *
+   * @param f
+   *          The function
+   * @param cache
+   *          The cache for memoization.
+   * @return recursive, cached DoubleToLongFunction */
+  public static DoubleToLongFunction cachedDoubleToLongFunction(RecursiveDoubleToLongFunction f,
+      DoubleToLongFunctionCache cache) {
+    final Recursive<DoubleToLongFunction> r = new Recursive<>();
+    return r.f = (d) -> cache.get(d, () -> f.apply(d, r.f));
+  }
+
   /** Recursive {@link DoubleUnaryOperator}. */
   public static DoubleUnaryOperator doubleUnaryOperator(RecursiveDoubleUnaryOperator f) {
     final Recursive<DoubleUnaryOperator> r = new Recursive<>();
     return r.f = d -> f.apply(d, r.f);
+  }
+
+  /** Like {@link #doubleToLongFunction}, but using memoization.
+   *
+   * @param f
+   *          The operator
+   * @param cache
+   *          The cache for memoization.
+   * @return recursive, cached DoubleUnaryOperator */
+  public static DoubleUnaryOperator cachedDoubleUnaryOperator(RecursiveDoubleUnaryOperator f,
+      DoubleUnaryOperatorCache cache) {
+    final Recursive<DoubleUnaryOperator> r = new Recursive<>();
+    return r.f = (d) -> cache.get(d, () -> f.apply(d, r.f));
   }
 
   /** Recursive {@link Function}. */
@@ -168,11 +250,11 @@ public class Recursive<F> {
     return r.f = t -> f.apply(t, r.f);
   }
 
-  /** Like {@link #function(BiFunction)}, but using memoization.
+  /** Like {@link #function}, but using memoization.
    * <p>
    * Note that the cache holds strong references to all returned values. They all live until the
    * Function is garbage collected.
-   * 
+   *
    * @param f
    *          The function
    * @return recursive, cached Function */
@@ -180,11 +262,11 @@ public class Recursive<F> {
     return cachedFunction(f, FunctionCache.create());
   }
 
-  /** Like {@link #function(BiFunction)}, but using memoization.
+  /** Like {@link #function}, but using memoization.
    * <p>
    * Note that the cache holds strong references to all returned values. They all live until the
    * Function is garbage collected.
-   * 
+   *
    * @param f
    *          The function
    * @param cache
@@ -202,11 +284,11 @@ public class Recursive<F> {
     return r.f = (left, right) -> f.apply(left, right, r.f);
   }
 
-  /** Like {@link #intBinaryOperator(RecursiveIntBinaryOperator)}, but using memoization.
+  /** Like {@link #intBinaryOperator}, but using memoization.
    * <p>
    * This will convert two primitive integers to one Long object so the result can be cached in a
    * {@link Map}. That cache exists as long as the closure exists.
-   * 
+   *
    * @param f
    *          The function
    * @return recursive, cached IntBinaryOperator */
@@ -214,8 +296,8 @@ public class Recursive<F> {
     return cachedIntBinaryOperator(f, IntBinaryOperatorCache.create());
   }
 
-  /** Like {@link #intBinaryOperator(RecursiveIntBinaryOperator)}, but using memoization.
-   * 
+  /** Like {@link #intBinaryOperator}, but using memoization.
+   *
    * @param f
    *          The function
    * @param cache
@@ -233,8 +315,8 @@ public class Recursive<F> {
     return r.f = i -> f.apply(i, r.f);
   }
 
-  /** Like {@link #intFunction(RecursiveIntFunction)}, but using memoization.
-   * 
+  /** Like {@link #intFunction}, but using memoization.
+   *
    * @param f
    *          The function
    * @param min
@@ -247,8 +329,8 @@ public class Recursive<F> {
     return cachedIntFunction(f, IntFunctionCache.<R> create(min, max));
   }
 
-  /** Like {@link #intFunction(RecursiveIntFunction)}, but using memoization.
-   * 
+  /** Like {@link #intFunction}, but using memoization.
+   *
    * @param f
    *          The function
    * @param cache
@@ -266,8 +348,8 @@ public class Recursive<F> {
     return r.f = i -> f.test(i, r.f);
   }
 
-  /** Like {@link #intPredicate(RecursiveIntPredicate)}, but using memoization.
-   * 
+  /** Like {@link #intPredicate}, but using memoization.
+   *
    * @param f
    *          The function
    * @return recursive, cached IntUnaryOperator */
@@ -276,8 +358,8 @@ public class Recursive<F> {
     return cachedIntPredicate(f, IntPredicateCache.create(min, max));
   }
 
-  /** Like {@link #intPredicate(RecursiveIntPredicate)}, but using memoization.
-   * 
+  /** Like {@link #intPredicate}, but using memoization.
+   *
    * @param f
    *          The function
    * @param cache
@@ -294,8 +376,8 @@ public class Recursive<F> {
     return r.f = d -> f.apply(d, r.f);
   }
 
-  /** Like {@link #intToDoubleFunction(RecursiveIntToDoubleFunction)}, but using memoization.
-   * 
+  /** Like {@link #intToDoubleFunction}, but using memoization.
+   *
    * @param f
    *          The function
    * @param min
@@ -308,8 +390,8 @@ public class Recursive<F> {
     return cachedIntToDoubleFunction(f, IntToDoubleFunctionCache.create(min, max));
   }
 
-  /** Like {@link #intToDoubleFunction(RecursiveIntToDoubleFunction)}, but using memoization.
-   * 
+  /** Like {@link #intToDoubleFunction}, but using memoization.
+   *
    * @param f
    *          The function
    * @param cache
@@ -327,8 +409,8 @@ public class Recursive<F> {
     return r.f = d -> f.apply(d, r.f);
   }
 
-  /** Like {@link #intToLongFunction(RecursiveIntToLongFunction)}, but using memoization.
-   * 
+  /** Like {@link #intToLongFunction}, but using memoization.
+   *
    * @param f
    *          The function
    * @param min
@@ -341,8 +423,8 @@ public class Recursive<F> {
     return cachedIntToLongFunction(f, IntToLongFunctionCache.create(min, max));
   }
 
-  /** Like {@link #intToLongFunction(RecursiveIntToLongFunction)}, but using memoization.
-   * 
+  /** Like {@link #intToLongFunction}, but using memoization.
+   *
    * @param f
    *          The function
    * @param cache
@@ -360,8 +442,8 @@ public class Recursive<F> {
     return r.f = i -> f.apply(i, r.f);
   }
 
-  /** Like {@link #intUnaryOperator(RecursiveIntUnaryOperator)}, but using memoization.
-   * 
+  /** Like {@link #intUnaryOperator}, but using memoization.
+   *
    * @param f
    *          The operator
    * @param min
@@ -374,8 +456,8 @@ public class Recursive<F> {
     return cachedIntUnaryOperator(f, IntUnaryOperatorCache.create(min, max));
   }
 
-  /** Like {@link #intUnaryOperator(RecursiveIntUnaryOperator)}, but using memoization.
-   * 
+  /** Like {@link #intUnaryOperator}, but using memoization.
+   *
    * @param f
    *          The operator
    * @param cache
@@ -393,16 +475,54 @@ public class Recursive<F> {
     return r.f = (left, right) -> f.apply(left, right, r.f);
   }
 
+  /** Like {@link #longBinaryOperator}, but using memoization.
+   *
+   * @param f
+   *          The operator
+   * @param cache
+   *          The cache for memoization
+   * @return recursive, cached IntUnaryOperator */
+  public static LongBinaryOperator cachedLongBinaryOperator(RecursiveLongBinaryOperator f,
+      LongBinaryOperatorCache cache) {
+    final Recursive<LongBinaryOperator> r = new Recursive<>();
+    return r.f = (t, u) -> cache.get(t, u, () -> f.apply(t, u, r.f));
+  }
+
   /** Recursive {@link LongFunction}. */
   public static <R> LongFunction<R> longFunction(RecursiveLongFunction<R> f) {
     final Recursive<LongFunction<R>> r = new Recursive<>();
     return r.f = i -> f.apply(i, r.f);
   }
 
+  /** Like {@link #longFunction}, but using memoization.
+   *
+   * @param f
+   *          The funcation
+   * @param cache
+   *          The cache for memoization
+   * @return recursive, cached LongFunction */
+  public static <R> LongFunction<R> cachedLongFunction(RecursiveLongFunction<R> f,
+      LongFunctionCache<R> cache) {
+    final Recursive<LongFunction<R>> r = new Recursive<>();
+    return r.f = v -> cache.get(v, () -> f.apply(v, r.f));
+  }
+
   /** Recursive {@link LongPredicate}. */
   public static LongPredicate longPredicate(RecursiveLongPredicate f) {
     final Recursive<LongPredicate> r = new Recursive<>();
-    return r.f = i -> f.apply(i, r.f);
+    return r.f = i -> f.test(i, r.f);
+  }
+
+  /** Like {@link #longPredicate}, but using memoization.
+   *
+   * @param f
+   *          The predicate
+   * @param cache
+   *          The cache for memoization
+   * @return recursive, cached LongPredicate */
+  public static LongPredicate cachedLongPredicate(RecursiveLongPredicate f, LongPredicateCache cache) {
+    final Recursive<LongPredicate> r = new Recursive<>();
+    return r.f = v -> cache.get(v, () -> f.test(v, r.f));
   }
 
   /** Recursive {@link LongToDoubleFunction}. */
@@ -411,10 +531,36 @@ public class Recursive<F> {
     return r.f = d -> f.apply(d, r.f);
   }
 
+  /** Like {@link #longToDoubleFunction}, but using memoization.
+   *
+   * @param f
+   *          The function
+   * @param cache
+   *          The cache for memoization
+   * @return recursive, cached LongToDoubleFunction */
+  public static LongToDoubleFunction cachedLongPredicate(RecursiveLongToDoubleFunction f,
+      LongToDoubleFunctionCache cache) {
+    final Recursive<LongToDoubleFunction> r = new Recursive<>();
+    return r.f = v -> cache.get(v, () -> f.apply(v, r.f));
+  }
+
   /** Recursive {@link LongToIntFunction}. */
   public static LongToIntFunction longToIntFunction(RecursiveLongToIntFunction f) {
     final Recursive<LongToIntFunction> r = new Recursive<>();
     return r.f = d -> f.apply(d, r.f);
+  }
+
+  /** Like {@link #longToIntFunction}, but using memoization.
+   *
+   * @param f
+   *          The function
+   * @param cache
+   *          The cache for memoization
+   * @return recursive, cached LongToIntFunction */
+  public static LongToIntFunction cachedLongToIntFunction(RecursiveLongToIntFunction f,
+      LongToIntFunctionCache cache) {
+    final Recursive<LongToIntFunction> r = new Recursive<>();
+    return r.f = v -> cache.get(v, () -> f.apply(v, r.f));
   }
 
   /** Recursive {@link LongUnaryOperator}. */
@@ -423,17 +569,30 @@ public class Recursive<F> {
     return r.f = i -> f.apply(i, r.f);
   }
 
+  /** Like {@link #longUnaryOperator}, but using memoization.
+   *
+   * @param f
+   *          The operator
+   * @param cache
+   *          The cache for memoization
+   * @return recursive, cached LongUnaryOperator */
+  public static LongUnaryOperator cachedLongUnaryOperator(RecursiveLongUnaryOperator f,
+      LongUnaryOperatorCache cache) {
+    final Recursive<LongUnaryOperator> r = new Recursive<>();
+    return r.f = v -> cache.get(v, () -> f.apply(v, r.f));
+  }
+
   /** Recursive {@link Predicate}. */
   public static <T> Predicate<T> predicate(BiPredicate<T, Predicate<T>> f) {
     final Recursive<Predicate<T>> r = new Recursive<>();
     return r.f = t -> f.test(t, r.f);
   }
 
-  /** Like {@link #predicate(BiPredicate)}, but using memoization.
+  /** Like {@link #predicate}, but using memoization.
    * <p>
    * Note that the cache holds strong references to all returned values. They all live until the
    * Function is garbage collected.
-   * 
+   *
    * @param f
    *          The predicate
    * @return recursive, cached Predicate */
@@ -441,11 +600,11 @@ public class Recursive<F> {
     return cachedPredicate(f, FunctionCache.create());
   }
 
-  /** Like {@link #predicate(BiPredicate)}, but using memoization.
+  /** Like {@link #predicate}, but using memoization.
    * <p>
    * Note that the cache holds strong references to all returned values. They all live until the
    * Function is garbage collected.
-   * 
+   *
    * @param f
    *          The predicate
    * @param cache
@@ -464,10 +623,36 @@ public class Recursive<F> {
     return r.f = (t, u) -> f.apply(t, u, r.f);
   }
 
+  /** Like {@link #toDoubleBiFunction}, but using memoization.
+   *
+   * @param f
+   *          The function
+   * @param cache
+   *          The cache for memoization
+   * @return recursive, cached ToDoubleBiFunction */
+  public static <T, U> ToDoubleBiFunction<T, U> cachedToDoubleBiFunction(
+      RecursiveToDoubleBiFunction<T, U> f, ToDoubleBiFunctionCache<T, U> cache) {
+    final Recursive<ToDoubleBiFunction<T, U>> r = new Recursive<>();
+    return r.f = (t, u) -> cache.get(t, u, () -> f.apply(t, u, r.f));
+  }
+
   /** Recursive {@link ToDoubleFunction}. */
   public static <T> ToDoubleFunction<T> toDoubleFunction(RecursiveToDoubleFunction<T> f) {
     final Recursive<ToDoubleFunction<T>> r = new Recursive<>();
-    return r.f = t -> f.applyAsDouble(t, r.f);
+    return r.f = t -> f.apply(t, r.f);
+  }
+
+  /** Like {@link #toDoubleFunction}, but using memoization.
+   *
+   * @param f
+   *          The function
+   * @param cache
+   *          The cache for memoization
+   * @return recursive, cached LongToIntFunction */
+  public static <T> ToDoubleFunction<T> cachedToDoubleFunction(RecursiveToDoubleFunction<T> f,
+      ToDoubleFunctionCache<T> cache) {
+    final Recursive<ToDoubleFunction<T>> r = new Recursive<>();
+    return r.f = v -> cache.get(v, () -> f.apply(v, r.f));
   }
 
   /** Recursive {@link ToIntBiFunction}. */
@@ -476,10 +661,36 @@ public class Recursive<F> {
     return r.f = (t, u) -> f.apply(t, u, r.f);
   }
 
+  /** Like {@link #toIntBiFunction}, but using memoization.
+   *
+   * @param f
+   *          The function
+   * @param cache
+   *          The cache for memoization
+   * @return recursive, cached ToIntBiFunction */
+  public static <T, U> ToIntBiFunction<T, U> cachedIntBiFunction(RecursiveToIntBiFunction<T, U> f,
+      ToIntBiFunctionCache<T, U> cache) {
+    final Recursive<ToIntBiFunction<T, U>> r = new Recursive<>();
+    return r.f = (t, u) -> cache.get(t, u, () -> f.apply(t, u, r.f));
+  }
+
   /** Recursive {@link ToIntFunction}. */
   public static <T> ToIntFunction<T> toIntFunction(RecursiveToIntFunction<T> f) {
     final Recursive<ToIntFunction<T>> r = new Recursive<>();
     return r.f = t -> f.applyAsInt(t, r.f);
+  }
+
+  /** Like {@link #toIntFunction}, but using memoization.
+   *
+   * @param f
+   *          The function
+   * @param cache
+   *          The cache for memoization
+   * @return recursive, cached ToIntFunction */
+  public static <T> ToIntFunction<T> cachedToIntFunction(RecursiveToIntFunction<T> f,
+      ToIntFunctionCache<T> cache) {
+    final Recursive<ToIntFunction<T>> r = new Recursive<>();
+    return r.f = v -> cache.get(v, () -> f.apply(v, r.f));
   }
 
   /** Recursive {@link ToLongBiFunction}. */
@@ -488,10 +699,36 @@ public class Recursive<F> {
     return r.f = (t, u) -> f.apply(t, u, r.f);
   }
 
+  /** Like {@link #toLongBiFunction}, but using memoization.
+   *
+   * @param f
+   *          The function
+   * @param cache
+   *          The cache for memoization
+   * @return recursive, cached ToLongBiFunction */
+  public static <T, U> ToLongBiFunction<T, U> cachedToLongBiFunction(
+      RecursiveToLongBiFunction<T, U> f, ToLongBiFunctionCache<T, U> cache) {
+    final Recursive<ToLongBiFunction<T, U>> r = new Recursive<>();
+    return r.f = (t, u) -> cache.get(t, u, () -> f.apply(t, u, r.f));
+  }
+
   /** Recursive {@link ToLongFunction}. */
   public static <T> ToLongFunction<T> toLongFunction(RecursiveToLongFunction<T> f) {
     final Recursive<ToLongFunction<T>> r = new Recursive<>();
     return r.f = t -> f.applyAsLong(t, r.f);
+  }
+
+  /** Like {@link #toLongFunction}, but using memoization.
+   *
+   * @param f
+   *          The function
+   * @param cache
+   *          The cache for memoization
+   * @return recursive, cached ToLongFunction */
+  public static <T> ToLongFunction<T> cachedToLongFunction(RecursiveToLongFunction<T> f,
+      ToLongFunctionCache<T> cache) {
+    final Recursive<ToLongFunction<T>> r = new Recursive<>();
+    return r.f = v -> cache.get(v, () -> f.apply(v, r.f));
   }
 
   /** Recursive {@link UnaryOperator}. */
@@ -500,11 +737,11 @@ public class Recursive<F> {
     return r.f = t -> f.apply(t, r.f);
   }
 
-  /** Like {@link #unaryOperator(RecursiveUnaryOperator)}, but using memoization.
+  /** Like {@link #unaryOperator}, but using memoization.
    * <p>
    * Note that the cache holds strong references to all returned values. They all live until the
    * Function is garbage collected.
-   * 
+   *
    * @param f
    *          The operator
    * @return recursive, cached UnaryOperator */
@@ -512,11 +749,11 @@ public class Recursive<F> {
     return cachedUnaryOperator(f, FunctionCache.create());
   }
 
-  /** Like {@link #unaryOperator(RecursiveUnaryOperator)}, but using memoization.
+  /** Like {@link #unaryOperator}, but using memoization.
    * <p>
    * Note that the cache holds strong references to all returned values. They all live until the
    * Function is garbage collected.
-   * 
+   *
    * @param f
    *          The operator
    * @param cache

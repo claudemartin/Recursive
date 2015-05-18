@@ -12,7 +12,7 @@ public interface IntBinaryOperatorCache {
   /** Creates a cache that is backed by a {@code Map<Long, Integer>}. */
   public static IntBinaryOperatorCache create() {
     final Map<Long, Integer> map = new TreeMap<>();
-    final BiFunction<Integer, Integer, Long> i2l = (a, b) -> (((long) a) << 32) + ((long) b);
+    final BiFunction<Integer, Integer, Long> i2l = (a, b) -> ((long) a << 32) + (long) b;
     return (a, b, s) -> map.computeIfAbsent(i2l.apply(a, b), x -> s.getAsInt());
   }
 }

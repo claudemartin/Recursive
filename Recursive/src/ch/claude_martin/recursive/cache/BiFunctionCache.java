@@ -1,6 +1,5 @@
 package ch.claude_martin.recursive.cache;
 
-import java.lang.ref.WeakReference;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Supplier;
