@@ -1,6 +1,10 @@
 package ch.claude_martin.recursive.cache;
 
+import static java.util.Arrays.asList;
+
+import java.util.Comparator;
 import java.util.Objects;
+import java.util.stream.StreamSupport;
 
 // comparable because some maps (TreeMap) need comparable key elements.
 final class Pair<F, S> implements Comparable<Pair<F, S>> {
@@ -42,26 +46,26 @@ final class Pair<F, S> implements Comparable<Pair<F, S>> {
     return this.second;
   }
 
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings({ "rawtypes", "unchecked" })
+  private final static Comparator<Pair> comparator = (Comparator<Pair>) (Object) getComparator();
+
+  private static <A extends Comparable<A>, B extends Comparable<B>> Comparator<Pair<A, B>> getComparator() {
+    return Comparator.<Pair<A, B>, A> comparing(Pair::_1,
+        Comparator.nullsFirst(Comparator.naturalOrder()))//
+        .thenComparing(
+            Comparator.<Pair<A, B>, B> comparing(Pair::_2,
+                Comparator.nullsFirst(Comparator.naturalOrder())));
+  }
+
   @Override
-  public int compareTo(Pair<F, S> o) {
-    if (this.first instanceof Comparable) {
-      final int k = ((Comparable<F>) this.first).compareTo(o.first);
-      if (k > 0)
-        return 1;
-      if (k < 0)
-        return -1;
-    }
+  public int compareTo(final Pair<F, S> o) {
+    return Objects.compare(this, o, comparator);
+  }
 
-    if (this.second instanceof Comparable) {
-      final int k = ((Comparable<S>) this.second).compareTo(o.second);
-      if (k > 0)
-        return 1;
-      if (k < 0)
-        return -1;
-    }
-
-    return 0;
+  /** Are both values comparable? */
+  public boolean isComparable() {
+    return (this.first == null || (this.first instanceof Comparable))
+        && (this.second == null || (this.second instanceof Comparable));
   }
 
 }
