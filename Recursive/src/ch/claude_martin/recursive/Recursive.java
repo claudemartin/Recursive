@@ -7,7 +7,7 @@ import java.util.function.*;
 import ch.claude_martin.recursive.cache.*;
 import ch.claude_martin.recursive.function.*;
 
-/** Utility class for recusrive closures. This can convert any functional type to one that allows
+/** Utility class for recursive closures. This can convert any functional type to one that allows
  * recursive invokations. An extra paremater "self" can be used to call itself.
  * 
  * <p>
