@@ -138,7 +138,7 @@ public class Demo {
       return;
     }
 
-    System.out.println("I heared you like recursion, so I put some recursion into your recursion.");
+    System.out.println("I heard you like recursion, so I put some recursion into your recursion.");
     try {
       Thread.sleep(2000);
     } catch (Exception e) {
