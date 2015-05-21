@@ -21,7 +21,8 @@ import ch.claude_martin.recursive.function.*;
  * {@link OutOfMemoryError}.
  *
  * @author Claude Martin
- *
+ * @see Recursive
+ * 
  * @param <F>
  *          The type of functional interface of the closure. */
 public class Recursive<F> {

@@ -11,8 +11,14 @@ import java.util.stream.IntStream;
 
 import ch.claude_martin.recursive.function.RecursiveUnaryOperator;
 
+/**
+ * In order to understand recursion, one must first understand recursion.
+ * 
+ * @author Claude Martin
+ * @see Demo
+ */
 public class Demo {
-  public static void main(String[] args) throws Throwable {
+  public static void main(String... args) throws Throwable {
     System.out.println("--- Fibonacci: ---");
     // "fib" is a recursive function.
     final IntToLongFunction fib = Recursive.cachedIntToLongFunction(//
@@ -125,11 +131,19 @@ public class Demo {
       self.accept(i - 1);
     }).accept(5);
 
-    System.out.println("");
-    System.out.println("End of Demo. Thank you and good bye!");
-
-    System.out.flush();
     System.out.println();
+    System.out.flush();
+    if(args.length>0) {
+      System.out.println("End of Demo. Thank you and good bye!");
+      return;
+    }
+
+    System.out.println("I heared you like recursion, so I put some recursion into your recursion.");
+    try {
+      Thread.sleep(2000);
+    } catch (Exception e) {
+    }
+    main("U MAD?");
 
   }
 }
